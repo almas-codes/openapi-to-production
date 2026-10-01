@@ -1,0 +1,35 @@
+{
+  "name": "openapi-to-production-monorepo",
+  "private": true,
+  "type": "module",
+  "description": "One OpenAPI spec in -> production-grade full-stack out (ASP.NET Core, TypeScript, React Query, tests, mock)",
+  "packageManager": "pnpm@9.15.0",
+  "engines": {
+    "node": ">=20.0.0"
+  },
+  "scripts": {
+    "build": "turbo run build",
+    "test": "turbo run test",
+    "lint": "turbo run lint",
+    "typecheck": "turbo run typecheck",
+    "o2p": "node packages/cli/dist/index.js",
+    "format": "prettier --write \"**/*.{ts,tsx,js,json,md,yaml}\""
+  },
+  "devDependencies": {
+    "@o2p/cli": "workspace:*",
+    "@o2p/core": "workspace:*",
+    "@o2p/gen-docs": "workspace:*",
+    "@o2p/gen-dotnet": "workspace:*",
+    "@o2p/gen-nextjs": "workspace:*",
+    "@o2p/gen-postman": "workspace:*",
+    "@o2p/gen-react": "workspace:*",
+    "@o2p/gen-tests": "workspace:*",
+    "@o2p/gen-ts-client": "workspace:*",
+    "@o2p/mock-server": "workspace:*",
+    "@types/node": "^22.10.1",
+    "prettier": "^3.4.2",
+    "turbo": "^2.3.3",
+    "typescript": "^5.7.2",
+    "vitest": "^2.1.8"
+  }
+}

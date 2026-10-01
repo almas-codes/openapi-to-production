@@ -1,0 +1,13 @@
+---
+description: openapi-to-production conventions
+alwaysApply: true
+---
+- TypeScript strict. No `any` (use `unknown` + narrowing). No default exports except config files.
+- Generators are PURE functions: (ApiSpec, options) => GeneratedFile[]. Never read/write disk in a generator.
+- Never read raw OpenAPI inside generators, only the IR from `@o2p/core`.
+- Generated output must be deterministic: sort keys/operations, no timestamps, LF endings.
+- Every new generator ships with: options zod schema, golden snapshot test, README section, example output.
+- Every public function has TSDoc. Errors include a JSON pointer into the spec when relevant.
+- Prefer small files (<200 lines). Add tests in the same PR as the code.
+- Run `pnpm turbo run lint typecheck test` before declaring a task done.
+- Do not add dependencies without justifying them in the PR description.

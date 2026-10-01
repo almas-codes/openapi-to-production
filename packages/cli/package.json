@@ -1,0 +1,37 @@
+﻿{
+    "name":  "@o2p/cli",
+    "version":  "0.1.0",
+    "description":  "CLI binary for openapi-to-production (o2p)",
+    "bin":  {
+                "o2p":  "./dist/index.js"
+            },
+    "main":  "./dist/index.js",
+    "types":  "./dist/index.d.ts",
+    "scripts":  {
+                    "build":  "tsc",
+                    "typecheck":  "tsc --noEmit",
+                    "test":  "vitest run"
+                },
+    "dependencies":  {
+                         "@clack/prompts":  "^0.8.2",
+                         "@o2p/core":  "workspace:*",
+                         "@o2p/gen-docs":  "workspace:*",
+                         "@o2p/gen-dotnet":  "workspace:*",
+                         "@o2p/gen-nextjs":  "workspace:*",
+                         "@o2p/gen-postman":  "workspace:*",
+                         "@o2p/gen-react":  "workspace:*",
+                         "@o2p/gen-tests":  "workspace:*",
+                         "@o2p/gen-ts-client":  "workspace:*",
+                         "@o2p/mock-server":  "workspace:*",
+                         "chokidar":  "^4.0.3",
+                         "commander":  "^12.1.0",
+                         "picocolors":  "^1.1.1",
+                         "yaml":  "^2.6.1"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^22.10.1",
+                            "typescript":  "^5.7.2",
+                            "vitest":  "^2.1.8"
+                        },
+    "type":  "module"
+}

@@ -1,0 +1,39 @@
+name: ci
+on: [push, pull_request]
+
+jobs:
+  node:
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm turbo run lint typecheck test build
+      - uses: codecov/codecov-action@v4
+        if: always()
+
+  e2e:
+    needs: node
+    runs-on: ubuntu-latest
+    strategy:
+      matrix:
+        example: [petstore, ecommerce]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 20
+          cache: pnpm
+      - uses: actions/setup-dotnet@v4
+        with:
+          dotnet-version: 9.0.x
+      - run: pnpm install --frozen-lockfile && pnpm build
+      - run: pnpm o2p generate --config examples/${{ matrix.example }}/o2p.config.ts
+      - run: dotnet build examples/${{ matrix.example }}/backend && dotnet test examples/${{ matrix.example }}/backend
+      - run: pnpm --filter ./examples/${{ matrix.example }}/frontend exec tsc --noEmit
+      - run: pnpm o2p check --config examples/${{ matrix.example }}/o2p.config.ts

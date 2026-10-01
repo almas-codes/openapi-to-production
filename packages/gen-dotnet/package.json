@@ -1,0 +1,23 @@
+﻿{
+    "name":  "@o2p/gen-dotnet",
+    "version":  "0.1.0",
+    "description":  "ASP.NET Core API, DTOs, FluentValidation, and controller scaffolding generator for o2p",
+    "main":  "./dist/index.js",
+    "types":  "./dist/index.d.ts",
+    "scripts":  {
+                    "build":  "tsc",
+                    "typecheck":  "tsc --noEmit",
+                    "test":  "vitest run"
+                },
+    "dependencies":  {
+                         "@o2p/core":  "workspace:*",
+                         "handlebars":  "^4.7.8",
+                         "zod":  "^3.24.1"
+                     },
+    "devDependencies":  {
+                            "@types/node":  "^22.10.1",
+                            "typescript":  "^5.7.2",
+                            "vitest":  "^2.1.8"
+                        },
+    "type":  "module"
+}
