@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/mock-server",
     "version":  "0.1.0",
     "description":  "Fastify-based spec-driven mock server with realistic fake data and Ajv validation for o2p",

@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/gen-ts-client",
     "version":  "0.1.0",
     "description":  "Fetch-based typed TypeScript API client with Zod schemas for o2p",

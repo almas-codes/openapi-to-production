@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/gen-tests",
     "version":  "0.1.0",
     "description":  "xUnit and Vitest/MSW contract tests generator for o2p",

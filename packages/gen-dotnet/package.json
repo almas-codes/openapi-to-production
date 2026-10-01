@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/gen-dotnet",
     "version":  "0.1.0",
     "description":  "ASP.NET Core API, DTOs, FluentValidation, and controller scaffolding generator for o2p",

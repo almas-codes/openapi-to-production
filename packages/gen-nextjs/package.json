@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/gen-nextjs",
     "version":  "0.1.0",
     "description":  "Next.js App Router route handlers and server actions generator for o2p",

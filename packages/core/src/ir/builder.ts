@@ -31,7 +31,7 @@ export class IrBuilder {
 
     // 1. Process all declared component schemas
     for (const [name, rawSchema] of Object.entries(this.rawComponents)) {
-      const normalized = this.normalizeSchema(rawSchema as Record<string, unknown>, pascal(name));
+      const normalized = this.normalizeSchema(rawSchema as Record<string, unknown>, pascal(name), true);
       this.hoistedSchemas[pascal(name)] = {
         name: pascal(name),
         schema: normalized,
@@ -184,7 +184,7 @@ export class IrBuilder {
     };
   }
 
-  private normalizeSchema(raw: Record<string, unknown>, contextName: string): Schema {
+  private normalizeSchema(raw: Record<string, unknown>, contextName: string, isTopLevel = false): Schema {
     if (!raw || typeof raw !== 'object') {
       return { kind: 'primitive', type: 'string' };
     }
@@ -260,7 +260,11 @@ export class IrBuilder {
         nullable,
       };
 
-      // Hoist anonymous enums to named schemas
+      if (isTopLevel) {
+        return enumSchema;
+      }
+
+      // Hoist anonymous inline enums to named schemas
       if (!this.hoistedSchemas[contextName]) {
         this.hoistedSchemas[contextName] = {
           name: contextName,
@@ -318,7 +322,11 @@ export class IrBuilder {
         nullable,
       };
 
-      // Hoist inline objects if they are complex
+      if (isTopLevel) {
+        return objSchema;
+      }
+
+      // Hoist anonymous inline objects if they are complex
       if (properties.length > 0 && !this.hoistedSchemas[contextName] && !contextName.endsWith('Param')) {
         this.hoistedSchemas[contextName] = {
           name: contextName,

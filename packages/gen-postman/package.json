@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/gen-postman",
     "version":  "0.1.0",
     "description":  "Postman v2.1 collection and environment generator for o2p",

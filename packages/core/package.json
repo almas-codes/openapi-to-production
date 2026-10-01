@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/core",
     "version":  "0.1.0",
     "description":  "Core Intermediate Representation, loader, pipeline, and safe file writer for o2p",

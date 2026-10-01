@@ -17,7 +17,7 @@ export const TsClientOptionsSchema = z.object({
 
 export type TsClientOptions = z.infer<typeof TsClientOptionsSchema>;
 
-function tsType(s: Schema): string {
+function tsType(s: Schema, typePrefix = ''): string {
   const q = s.nullable ? ' | null' : '';
   switch (s.kind) {
     case 'primitive':
@@ -26,16 +26,16 @@ function tsType(s: Schema): string {
       if (s.type === 'boolean') return `boolean${q}`;
       return `unknown${q}`;
     case 'array':
-      return `Array<${tsType(s.items)}>${q}`;
+      return `Array<${tsType(s.items, typePrefix)}>${q}`;
     case 'ref':
-      return `${pascal(s.name)}${q}`;
+      return `${typePrefix}${pascal(s.name)}${q}`;
     case 'enum':
       return s.values.map((v) => JSON.stringify(v)).join(' | ') + q;
     case 'union':
-      return s.variants.map(tsType).join(' | ') + q;
+      return s.variants.map((v) => tsType(v, typePrefix)).join(' | ') + q;
     case 'object':
       return s.additionalProperties
-        ? `Record<string, ${tsType(s.additionalProperties)}>${q}`
+        ? `Record<string, ${tsType(s.additionalProperties, typePrefix)}>${q}`
         : `Record<string, unknown>${q}`;
   }
 }
@@ -65,7 +65,7 @@ function zodSchema(s: Schema): string {
       base = `z.array(${zodSchema(s.items)})`;
       break;
     case 'ref':
-      base = `${pascal(s.name)}Schema`;
+      base = `z.lazy(() => ${pascal(s.name)}Schema)`;
       break;
     case 'enum':
       base = `z.enum([${s.values.map((v) => JSON.stringify(v)).join(', ')}])`;
@@ -85,6 +85,24 @@ function zodSchema(s: Schema): string {
   return base;
 }
 
+function getSchemaDependencies(s: Schema): string[] {
+  const deps: string[] = [];
+  function walk(sub: Schema) {
+    if (sub.kind === 'ref') {
+      deps.push(pascal(sub.name));
+    } else if (sub.kind === 'array') {
+      walk(sub.items);
+    } else if (sub.kind === 'object') {
+      for (const p of sub.properties) walk(p.schema);
+      if (sub.additionalProperties) walk(sub.additionalProperties);
+    } else if (sub.kind === 'union') {
+      for (const v of sub.variants) walk(v);
+    }
+  }
+  walk(s);
+  return deps;
+}
+
 export default function tsClient(options: Partial<TsClientOptions> & { out: string }) {
   return {
     generator: defineGenerator({
@@ -94,10 +112,32 @@ export default function tsClient(options: Partial<TsClientOptions> & { out: stri
         const { spec, options: opts } = ctx;
         const files: GeneratedFile[] = [];
 
+        // Topologically sort schemas so dependencies appear before consumers
+        const schemaEntries = Object.entries(spec.schemas);
+        const sortedEntries: typeof schemaEntries = [];
+        const visited = new Set<string>();
+
+        function visit(name: string, entry: (typeof schemaEntries)[0]) {
+          if (visited.has(name)) return;
+          visited.add(name);
+          const deps = getSchemaDependencies(entry[1].schema);
+          for (const dep of deps) {
+            const depEntry = schemaEntries.find(([n]) => pascal(n) === dep);
+            if (depEntry && !visited.has(depEntry[0])) {
+              visit(depEntry[0], depEntry);
+            }
+          }
+          sortedEntries.push(entry);
+        }
+
+        for (const entry of schemaEntries) {
+          visit(entry[0], entry);
+        }
+
         // 1. Generate Models and Zod schemas
         let modelsTs = `import { z } from 'zod';\n\n`;
 
-        for (const [name, schemaObj] of Object.entries(spec.schemas)) {
+        for (const [name, schemaObj] of sortedEntries) {
           const s = schemaObj.schema;
           const typeName = pascal(name);
 
@@ -155,7 +195,7 @@ export default function tsClient(options: Partial<TsClientOptions> & { out: stri
           clientTs += `    ${camel(tag)}: {\n`;
           for (const op of ops) {
             const resp = op.responses.find((r) => r.status.startsWith('2'));
-            const retType = resp?.schema ? tsType(resp.schema) : 'void';
+            const retType = resp?.schema ? tsType(resp.schema, 'types.') : 'void';
             const schemaLookup = resp?.schema && resp.schema.kind === 'ref'
               ? `types.${pascal(resp.schema.name)}Schema`
               : 'undefined';
@@ -165,10 +205,10 @@ export default function tsClient(options: Partial<TsClientOptions> & { out: stri
 
             const argsDef: string[] = [];
             for (const p of pathParams) {
-              argsDef.push(`${camel(p.name)}: ${tsType(p.schema)}`);
+              argsDef.push(`${camel(p.name)}: ${tsType(p.schema, 'types.')}`);
             }
             if (op.requestBody) {
-              argsDef.push(`body: ${tsType(op.requestBody.schema)}`);
+              argsDef.push(`body: ${tsType(op.requestBody.schema, 'types.')}`);
             }
             if (queryParams.length > 0) {
               argsDef.push(`query?: Record<string, unknown>`);

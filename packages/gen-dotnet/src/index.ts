@@ -38,7 +38,7 @@ export default function dotnet(options: Partial<DotnetOptions> & { out: string }
         }
 
         // 1. Generate Models (DTOs and Enums)
-        let modelsContent = `#nullable enable\nusing System;\nusing System.Collections.Generic;\nusing System.Text.Json.Serialization;\n\nnamespace ${ns}.Models;\n\n`;
+        let modelsContent = `#nullable enable\nusing System;\nusing System.Collections.Generic;\nusing System.Text.Json.Serialization;\nusing Microsoft.AspNetCore.Http;\n\nnamespace ${ns}.Models;\n\n`;
 
         for (const [name, schemaObj] of Object.entries(spec.schemas)) {
           const s = schemaObj.schema;
@@ -101,7 +101,7 @@ export default function dotnet(options: Partial<DotnetOptions> & { out: string }
           const tagName = pascal(tag);
 
           // Service Interface (generated)
-          let svcInterface = `#nullable enable\nusing System.Threading;\nusing System.Threading.Tasks;\nusing ${ns}.Models;\n\nnamespace ${ns}.Services;\n\npublic interface I${tagName}Service\n{\n`;
+          let svcInterface = `#nullable enable\nusing System;\nusing System.Collections.Generic;\nusing System.Threading;\nusing System.Threading.Tasks;\nusing Microsoft.AspNetCore.Http;\nusing ${ns}.Models;\n\nnamespace ${ns}.Services;\n\npublic interface I${tagName}Service\n{\n`;
           for (const op of ops) {
             const resp = op.responses.find((r) => r.status.startsWith('2')) || op.responses[0];
             const retType = resp?.schema ? csType(resp.schema, true) : 'void';
@@ -124,7 +124,7 @@ export default function dotnet(options: Partial<DotnetOptions> & { out: string }
           });
 
           // Service Scaffold (written once)
-          let svcScaffold = `#nullable enable\nusing System;\nusing System.Threading;\nusing System.Threading.Tasks;\nusing ${ns}.Models;\n\nnamespace ${ns}.Services;\n\npublic class ${tagName}Service : I${tagName}Service\n{\n`;
+          let svcScaffold = `#nullable enable\nusing System;\nusing System.Collections.Generic;\nusing System.Threading;\nusing System.Threading.Tasks;\nusing Microsoft.AspNetCore.Http;\nusing ${ns}.Models;\n\nnamespace ${ns}.Services;\n\npublic class ${tagName}Service : I${tagName}Service\n{\n`;
           for (const op of ops) {
             const resp = op.responses.find((r) => r.status.startsWith('2')) || op.responses[0];
             const retType = resp?.schema ? csType(resp.schema, true) : 'void';
@@ -146,7 +146,7 @@ export default function dotnet(options: Partial<DotnetOptions> & { out: string }
           });
 
           // Controller Base (generated)
-          let ctrlBase = `#nullable enable\nusing System.Threading;\nusing System.Threading.Tasks;\nusing Microsoft.AspNetCore.Mvc;\nusing ${ns}.Models;\nusing ${ns}.Services;\n\nnamespace ${ns}.Controllers.Generated;\n\n[ApiController]\n[Route("api/[controller]")]\npublic abstract class ${tagName}ControllerBase : ControllerBase\n{\n    protected readonly I${tagName}Service Service;\n    protected ${tagName}ControllerBase(I${tagName}Service service) => Service = service;\n\n`;
+          let ctrlBase = `#nullable enable\nusing System;\nusing System.Collections.Generic;\nusing System.Threading;\nusing System.Threading.Tasks;\nusing Microsoft.AspNetCore.Http;\nusing Microsoft.AspNetCore.Mvc;\nusing ${ns}.Models;\nusing ${ns}.Services;\n\nnamespace ${ns}.Controllers.Generated;\n\n[ApiController]\n[Route("api/[controller]")]\npublic abstract class ${tagName}ControllerBase : ControllerBase\n{\n    protected readonly I${tagName}Service Service;\n    protected ${tagName}ControllerBase(I${tagName}Service service) => Service = service;\n\n`;
 
           for (const op of ops) {
             const resp = op.responses.find((r) => r.status.startsWith('2')) || op.responses[0];
@@ -154,7 +154,10 @@ export default function dotnet(options: Partial<DotnetOptions> & { out: string }
             const actionRet = retType === 'void' ? 'Task<IActionResult>' : `Task<ActionResult<${retType}>>`;
 
             ctrlBase += `    [Http${pascal(op.method)}("${op.path.replace(/^\//, '')}")]\n`;
-            const actionParams = op.parameters.map((p) => `[From${pascal(p.in)}] ${csType(p.schema, p.required)} ${camel(p.name)}`);
+            const actionParams = op.parameters.map((p) => {
+              const binding = p.in === 'path' ? 'FromRoute' : p.in === 'query' ? 'FromQuery' : p.in === 'header' ? 'FromHeader' : 'FromQuery';
+              return `[${binding}] ${csType(p.schema, p.required)} ${camel(p.name)}`;
+            });
             if (op.requestBody) {
               actionParams.push(`[FromBody] ${csType(op.requestBody.schema, true)} body`);
             }
@@ -196,7 +199,7 @@ export default function dotnet(options: Partial<DotnetOptions> & { out: string }
           diContent += `        services.AddScoped<I${tagName}Service, ${tagName}Service>();\n`;
         }
         if (opts.validation === 'fluent') {
-          diContent += `        services.AddValidatorsFromAssemblyContaining<GeneratedApiExtensions>();\n`;
+          diContent += `        services.AddValidatorsFromAssembly(typeof(GeneratedApiExtensions).Assembly);\n`;
         }
         diContent += `        return services;\n    }\n}\n`;
 

@@ -1,4 +1,4 @@
-﻿{
+{
     "name":  "@o2p/gen-docs",
     "version":  "0.1.0",
     "description":  "Markdown and static HTML API documentation generator for o2p",
